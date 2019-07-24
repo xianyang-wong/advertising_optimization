@@ -41,7 +41,7 @@
 ### Instructions to Generate Optimal Marketing Plan
 
 Step1: Place training data features in .csv(s) format as 'data/WS1Data.csv'.\
-Step2: Install necessary libraries by running `pip install -r requirements.txt`.\
-Step3: Run `python advertising_optimize.py` to get the outputs generated to the output folder.
-
-
+Step2: Install necessary libraries.\
+`pip install -r requirements.txt`\
+Step3: Run program to get the outputs generated to the output folder.\
+`python advertising_optimize.py --number_of_generations 100`
