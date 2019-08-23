@@ -22,7 +22,7 @@ if __name__ == '__main__':
     opt = parser.parse_args()
 
     ## Initial Generation
-    marketing_plans = generate_marketing_plans(100)
+    marketing_plans = generate_marketing_plans(200)
 
     marketing_plans['cost'] = calculate_costs(marketing_plans)
     marketing_plans['predicted_clicks'] = predict_clicks(marketing_plans)
@@ -33,21 +33,21 @@ if __name__ == '__main__':
     ## Subsequent Generations
     for i in tqdm(range((opt.number_of_generations-1))):
         if i == 0:
-            parents = marketing_plans.sort_values('predicted_clicks', ascending=False).head(10).copy()
-            new_childs = crossover(parents, 70)
-            scrambled_new_childs = mutate_scramble(new_childs, 0.1)
-            scrambled_gaussian_new_childs = mutate_gaussian(scrambled_new_childs, 0.1)
-            subsequent_generated_marketing_plans = generate_marketing_plans(20)
+            parents = marketing_plans.sort_values('predicted_clicks', ascending=False).head(20).copy()
+            new_childs = crossover(parents, 120)
+            scrambled_new_childs = mutate_scramble(new_childs, 0.3)
+            scrambled_gaussian_new_childs = mutate_gaussian(scrambled_new_childs, 0.5)
+            subsequent_generated_marketing_plans = generate_marketing_plans(60)
             subsequent_generated_marketing_plans['cost'] = calculate_costs(subsequent_generated_marketing_plans)
             subsequent_generated_marketing_plans['predicted_clicks'] = predict_clicks(subsequent_generated_marketing_plans)
 
             next_gen_marketing_plans = pd.concat([parents, scrambled_gaussian_new_childs, subsequent_generated_marketing_plans], axis=0)
         else:
-            parents = next_gen_marketing_plans.sort_values('predicted_clicks', ascending=False).head(10).copy()
-            new_childs = crossover(parents, 70)
-            scrambled_new_childs = mutate_scramble(new_childs, 0.1)
-            scrambled_gaussian_new_childs = mutate_gaussian(scrambled_new_childs, 0.1)
-            subsequent_generated_marketing_plans = generate_marketing_plans(20)
+            parents = next_gen_marketing_plans.sort_values('predicted_clicks', ascending=False).head(20).copy()
+            new_childs = crossover(parents, 120)
+            scrambled_new_childs = mutate_scramble(new_childs, 0.3)
+            scrambled_gaussian_new_childs = mutate_gaussian(scrambled_new_childs, 0.5)
+            subsequent_generated_marketing_plans = generate_marketing_plans(60)
             subsequent_generated_marketing_plans['cost'] = calculate_costs(subsequent_generated_marketing_plans)
             subsequent_generated_marketing_plans['predicted_clicks'] = predict_clicks(subsequent_generated_marketing_plans)
 
@@ -65,3 +65,4 @@ if __name__ == '__main__':
 #  best_marketing_plan_df.sort_values('predicted_clicks', ascending=False).head(1)
 #ad0  ad1  ad2  ad3  ad4  ad0_start_time  ad1_start_time  ad2_start_time  ad3_start_time  ad4_start_time  ad0_time_spent  ad1_time_spent  ad2_time_spent  ad3_time_spent  ad4_time_spent   cost  predicted_clicks
 #  3    0    6    1    5            23.5             0.0             0.2             5.2            23.8             0.4             0.0            19.7            16.1             0.6  299.6      423606.39354
+

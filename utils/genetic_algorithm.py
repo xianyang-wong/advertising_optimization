@@ -45,10 +45,137 @@ model_var = ['ad0_1','ad0_2','ad0_3','ad0_4','ad0_5',
              'ad0_time_spent','ad1_time_spent','ad2_time_spent','ad3_time_spent','ad4_time_spent']
 
 regression_data = data[model_var + ['User Clicks']].copy()
+X = regression_data.iloc[:,:-1]
+y = regression_data.iloc[:,-1]
 
-click_model = sm.OLS(endog=regression_data['User Clicks'],
-                     exog=sm.add_constant(regression_data[model_var])).fit()
-click_model.summary()
+def normalize_model_data(data):
+
+    col_to_normalize = [col for col in data.columns if ('start_time' in col) | ('time_spent' in col)]
+    data_norm = data.copy()
+    for col in col_to_normalize:
+        data_norm[col] = data_norm[col] / 24
+
+    return data_norm
+
+X_norm = normalize_model_data(X)
+
+from sklearn.model_selection import KFold
+from sklearn.model_selection import GridSearchCV
+from sklearn.linear_model import LinearRegression
+from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
+from sklearn.svm import SVR
+from sklearn.neural_network import MLPRegressor
+
+
+# def grid_search(model, parameters, n_folds, scoring, X_train, y_train):
+#     grid_search = GridSearchCV(model, param_grid=parameters, cv=n_folds, verbose=1,
+#                                scoring=scoring, n_jobs=-1)
+#
+#     grid_search = grid_search.fit(X_train, y_train.values.ravel())
+#
+#     best_score = grid_search.best_score_
+#     best_parameters = grid_search.best_params_
+#     print(best_score)
+#     print(best_parameters)
+#
+#     return (best_score, best_parameters)
+#
+# rf_parameters = {'n_estimators':[250,500,750],'max_depth':[5,10,15,20,25,30,35,40,45,50],'max_features':[35]}
+#
+# rf_best_accuracy, rf_best_parameters = grid_search(RandomForestRegressor(),
+#                                                    rf_parameters,
+#                                                    5,
+#                                                    'r2',
+#                                                    X,
+#                                                    y)
+#
+# gb_parameters = {'n_estimators':[250, 500, 750, 1000, 1500], 'learning_rate':[0.005, 0.125, 0.25], 'max_depth':[3, 5,10,15],
+#                  'max_features':[35], 'subsample':[0.3, 0.4, 0.5, 0.6, 0.7]}
+#
+# gb_best_accuracy, gb_best_parameters = grid_search(GradientBoostingRegressor(loss='ls'),
+#                                                    gb_parameters,
+#                                                    5,
+#                                                    'r2',
+#                                                    X,
+#                                                    y)
+#
+# svm_parameters = [{'kernel': ['rbf'], 'gamma': [1e-2, 1e-3, 1e-4, 1e-5],
+#                      'C': [0.001, 0.10, 0.1, 10, 25, 50, 100, 1000]},
+#                     {'kernel': ['sigmoid'], 'gamma': [1e-2, 1e-3, 1e-4, 1e-5],
+#                      'C': [0.001, 0.10, 0.1, 10, 25, 50, 100, 1000]},
+#                     {'kernel': ['linear'], 'C': [0.001, 0.10, 0.1, 10, 25, 50, 100, 1000]}]
+#
+# svm_best_accuracy, svm_best_parameters = grid_search(SVR(),
+#                                                    svm_parameters,
+#                                                    5,
+#                                                    'r2',
+#                                                    X_norm,
+#                                                    y)
+#
+# mlp_parameters = {'hidden_layer_sizes':[(64,64,64),(128,128,128),(256,256,256),(512,512,512)],
+#                   'alpha':[0.5,0.3,0.2,0.1,0.05],
+#                   'batch_size':[4,8,16,32,64]}
+#
+# mlp_best_accuracy, mlp_best_parameters = grid_search(MLPRegressor(),
+#                                                    mlp_parameters,
+#                                                    5,
+#                                                    'r2',
+#                                                    X_norm,
+#                                                    y)
+#
+#
+# cv = KFold(n_splits=5, random_state=612, shuffle=False)
+# linear_reg_scores = []
+# mlp_scores = []
+# random_forest_scores = []
+# gradient_boost_scores = []
+#
+# for train_index, test_index in cv.split(X_norm):
+#     X_train, X_test, y_train, y_test = X_norm.iloc[train_index,:], X_norm.iloc[test_index,:], y.iloc[train_index], y.iloc[test_index]
+#
+#     linear_reg_model = LinearRegression()
+#     linear_reg_model.fit(X_train, y_train)
+#     linear_reg_scores.append(linear_reg_model.score(X_test, y_test))
+#
+#     mlp_model = MLPRegressor(alpha=mlp_best_parameters['alpha'],
+#                              batch_size=mlp_best_parameters['batch_size'],
+#                              hidden_layer_sizes=mlp_best_parameters['hidden_layer_sizes'])
+#     mlp_model.fit(X_train, y_train)
+#     mlp_scores.append(mlp_model.score(X_test, y_test))
+#
+#     random_forest_model = RandomForestRegressor(n_estimators=rf_best_parameters['n_estimators'],
+#                                                 max_depth=rf_best_parameters['max_depth'],
+#                                                 max_features=rf_best_parameters['max_features'])
+#     random_forest_model.fit(X_train, y_train)
+#     random_forest_scores.append(random_forest_model.score(X_test, y_test))
+#
+#     gradient_boost_model = GradientBoostingRegressor(n_estimators=gb_best_parameters['n_estimators'],
+#                                                      max_depth=gb_best_parameters['max_depth'],
+#                                                      max_features=gb_best_parameters['max_features'],
+#                                                      learning_rate=gb_best_parameters['learning_rate'],
+#                                                      subsample=gb_best_parameters['subsample'])
+#     gradient_boost_model.fit(X_train, y_train)
+#     gradient_boost_scores.append(gradient_boost_model.score(X_test, y_test))
+#
+# model_comparison = pd.DataFrame({'rf':random_forest_scores,
+#                                  'gb':gradient_boost_scores,
+#                                  'mlp':mlp_scores,
+#                                  'lr':linear_reg_scores})
+# model_comparison.describe()
+
+gb_best_parameters = {'learning_rate': 0.125, 'max_depth': 3, 'max_features': 35, 'n_estimators': 1000, 'subsample': 0.4}
+
+click_model = GradientBoostingRegressor(n_estimators=gb_best_parameters['n_estimators'],
+                                           max_depth=gb_best_parameters['max_depth'],
+                                           max_features=gb_best_parameters['max_features'],
+                                           learning_rate=gb_best_parameters['learning_rate'],
+                                           subsample=gb_best_parameters['subsample'])
+
+click_model.fit(X_norm, y)
+
+# click_model = sm.OLS(endog=X_norm['User Clicks'],
+#                      exog=X_norm[model_var])).fit()
+# click_model.summary()
 
 ad_banner_cost = {
     'ad0': 15,
@@ -147,7 +274,8 @@ def predict_clicks(data_to_predict):
                             'ad0_time_spent', 'ad1_time_spent', 'ad2_time_spent', 'ad3_time_spent', 'ad4_time_spent']]],
                      axis=1)
 
-    user_clicks = click_model.predict(sm.add_constant(data[model_var], has_constant='add'))
+    # user_clicks = click_model.predict(sm.add_constant(data[model_var], has_constant='add'))
+    user_clicks = click_model.predict(normalize_model_data(data[model_var]))
 
     return user_clicks
 
@@ -249,22 +377,54 @@ def mutate_scramble(marketing_plans, mutation_scramble_rate):
             shuffle_index = list(np.arange(0, 5))
             random.shuffle(shuffle_index)
 
-            plan_ad_banners = plan[['ad0', 'ad1', 'ad2', 'ad3', 'ad4']].copy()
-            shuffled_plan_ad_banners = plan_ad_banners.iloc[:, shuffle_index].copy()
-            shuffled_plan_ad_banners.columns = plan_ad_banners.columns
+            if random.choice([0,1,2]) == 0:
+                plan_ad_banners = plan[['ad0', 'ad1', 'ad2', 'ad3', 'ad4']].copy()
+                shuffled_plan_ad_banners = plan_ad_banners.iloc[:, shuffle_index].copy()
+                shuffled_plan_ad_banners.columns = plan_ad_banners.columns
 
-            plan_start_time = plan[
-                ['ad0_start_time', 'ad1_start_time', 'ad2_start_time', 'ad3_start_time', 'ad4_start_time']].copy()
-            shuffled_plan_start_time = plan_start_time.iloc[:, shuffle_index].copy()
-            shuffled_plan_start_time.columns = plan_start_time.columns
+                shuffled_plan_start_time = plan[
+                    ['ad0_start_time', 'ad1_start_time', 'ad2_start_time', 'ad3_start_time', 'ad4_start_time']].copy()
 
-            plan_time_spent = plan[
-                ['ad0_time_spent', 'ad1_time_spent', 'ad2_time_spent', 'ad3_time_spent', 'ad4_time_spent']].copy()
-            shuffled_plan_time_spent = plan_time_spent.iloc[:, shuffle_index].copy()
-            shuffled_plan_time_spent.columns = plan_time_spent.columns
+                shuffled_plan_time_spent = plan[
+                    ['ad0_time_spent', 'ad1_time_spent', 'ad2_time_spent', 'ad3_time_spent', 'ad4_time_spent']].copy()
+
+                # plan_record = pd.concat([shuffled_plan_ad_banners, shuffled_plan_start_time, shuffled_plan_time_spent],
+                #                         axis=1)
+                # plan_record['cost'] = calculate_costs(plan_record)
+
+            if random.choice([0, 1, 2]) == 1:
+                shuffled_plan_ad_banners = plan[['ad0', 'ad1', 'ad2', 'ad3', 'ad4']].copy()
+
+                plan_start_time = plan[
+                    ['ad0_start_time', 'ad1_start_time', 'ad2_start_time', 'ad3_start_time', 'ad4_start_time']].copy()
+                shuffled_plan_start_time = plan_start_time.iloc[:, shuffle_index].copy()
+                shuffled_plan_start_time.columns = plan_start_time.columns
+
+                shuffled_plan_time_spent = plan[
+                    ['ad0_time_spent', 'ad1_time_spent', 'ad2_time_spent', 'ad3_time_spent', 'ad4_time_spent']].copy()
+
+                # plan_record = pd.concat([shuffled_plan_ad_banners, shuffled_plan_start_time, shuffled_plan_time_spent],
+                #                         axis=1)
+                # plan_record['cost'] = calculate_costs(plan_record)
+
+            if random.choice([0, 1, 2]) == 2:
+                shuffled_plan_ad_banners = plan[['ad0', 'ad1', 'ad2', 'ad3', 'ad4']].copy()
+
+                shuffled_plan_start_time = plan[
+                    ['ad0_start_time', 'ad1_start_time', 'ad2_start_time', 'ad3_start_time', 'ad4_start_time']].copy()
+
+                plan_time_spent = plan[
+                    ['ad0_time_spent', 'ad1_time_spent', 'ad2_time_spent', 'ad3_time_spent', 'ad4_time_spent']].copy()
+                shuffled_plan_time_spent = plan_time_spent.iloc[:, shuffle_index].copy()
+                shuffled_plan_time_spent.columns = plan_time_spent.columns
+
+                # plan_record = pd.concat([shuffled_plan_ad_banners, shuffled_plan_start_time, shuffled_plan_time_spent],
+                #                         axis=1)
+                # plan_record['cost'] = calculate_costs(plan_record)
 
             plan_record = pd.concat([shuffled_plan_ad_banners, shuffled_plan_start_time, shuffled_plan_time_spent],
                                     axis=1)
+            plan_record['cost'] = calculate_costs(plan_record)
 
         else:
             plan_ad_banners = plan[['ad0', 'ad1', 'ad2', 'ad3', 'ad4']].copy()
@@ -274,8 +434,8 @@ def mutate_scramble(marketing_plans, mutation_scramble_rate):
                 ['ad0_time_spent', 'ad1_time_spent', 'ad2_time_spent', 'ad3_time_spent', 'ad4_time_spent']].copy()
 
             plan_record = pd.concat([plan_ad_banners, plan_start_time, plan_time_spent], axis=1)
+            plan_record['cost'] = calculate_costs(plan_record)
 
-        plan_record['cost'] = calculate_costs(plan_record)
         if plan_record['cost'].values[0] <= 300:
             scrambled_marketing_plans = scrambled_marketing_plans.append(plan_record, ignore_index=True)
             i += 1
